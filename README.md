@@ -2,6 +2,8 @@
 
 Monitor network interfaces for IP address changes
 
+Requires `ip` only, optionally `systemd`.
+
 ## Usage
 
 ```text

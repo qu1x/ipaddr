@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Update IP address list. Read with `flock -s /etc/ipaddr cat /etc/ipaddr'.
+# Update IP address list. Read with `ipaddr'.
 
 # Copyright (c) 2017 Rouven Spreckels <n3vu0r@qu1x.org>
 #

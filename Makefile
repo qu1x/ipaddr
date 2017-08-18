@@ -17,7 +17,7 @@ install:
 	install -m 644 -Dt $(UNIT_DST) $(UNIT_SRC)
 	install -m 755 -Dt $(EXEC_DST) $(EXEC_SRC)
 	install -m 755 -Dt $(HOOK_DST) $(HOOK_SRC)
-	ln -s $(LIST_SRC) $(LIST_DST)
+	ln -sf $(LIST_SRC) $(LIST_DST)
 
 .PHONY: uninstall
 uninstall:

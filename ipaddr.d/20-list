@@ -1,4 +1,14 @@
 #! /bin/sh
+#
+# Update IP address list. Read with `flock -s /etc/ipaddr cat /etc/ipaddr'.
+
+# Copyright (c) 2017 Rouven Spreckels <n3vu0r@qu1x.org>
+#
+# Usage of the works is permitted provided that
+# this instrument is retained with the works, so that
+# any entity that uses the works is notified of this instrument.
+#
+# DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
 [ "$action" != update ] &&
 	flock "$WORK/list" printf "$list\n" > "$WORK/list"

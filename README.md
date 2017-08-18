@@ -37,9 +37,9 @@ Environment variables:
 
 Event variables:
   $list           <list of all currently assigned addresses
-                     as "$interface $address/$prefix\n"
-                     in the order they have been assigned
-                     inclusive the current $action>
+                    as "$interface $address/$prefix\n"
+                    in the order they have been assigned
+                    inclusive the current $action>
   $action         assign|update (lifetime via RA)|resign
   $index          <network interface index>
   $interface      <network interface name>

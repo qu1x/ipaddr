@@ -25,12 +25,16 @@ IP Address Monitor
 
 ipaddr [OPTION]
   Monitor network interfaces for IP address changes until terminated or
-  \`$FEED' ends.
+  \$IPADDR_FEED ends. If an instance is already running on the same
+  \$IPADDR_WORK directory and the \$IPADDR_HOOK/20-list hook is executable, all
+  currently assigned IP addresses are listed instead, in the format of the event
+  variable \$list. If addresses are missing, the monitoring has probably been
+  manually started after they had been assigned.
 
-  Hooks in $HOOK are executable or ignored. They are entered in
-  lexical order and have access to the environment and event variables
-  listed below. Hooks are advised to wrapped file operations with \`flock'.
-  Long hooks delay subsequent events but no event is ever missed.
+  Hooks in \$IPADDR_HOOK are executable or ignored. They are entered in lexical
+  order and have access to the environment and event variables listed below.
+  Hooks are advised to wrapped file operations with \`flock'. Long hooks delay
+  subsequent events but no event is ever missed.
 
 OPTIONs:
   -h, --help     Print help.
@@ -88,6 +92,10 @@ parse_lft() {
 }
 
 hook() {
+	[ -r "$WORK" -a -w "$WORK" -a -x "$WORK" ] || {
+		echo 1>&2 "Monitoring requires rwx permissions for $WORK"
+		exit 1
+	}
 	list=
 	$FEED | while read -r ev; read -r lft
 	do
@@ -127,17 +135,16 @@ hook() {
 	done
 }
 
+list() {
+	list="$WORK/list"
+	flock -s "$list" cat "$list" 2> /dev/null || true
+}
+
 [ $# -le 1 ] && what=$1 || what=*
 
 case $what in
 	"")
-		mkdir -p "$WORK" && (
-			flock -n 3 || {
-				echo 1>&2 "Already running at $WORK"
-				exit 1
-			}
-			hook
-		) 3< "$WORK" ;;
+		mkdir -p "$WORK" && (flock -n 3 && hook || list) 3< "$WORK" ;;
 	-h|--help)
 		echo "$help" ;;
 	-v|--version)

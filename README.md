@@ -2,24 +2,22 @@
 
 Monitor network interfaces for IP address changes
 
-## Installation
-
-```sh
-sudo make install
-sudo systemctl daemon-reload
-sudo systemctl enable ipaddr
-sudo systemctl start ipaddr
-```
-
 ## Usage
 
 ```text
+$ ipaddr
+interface address/prefix
+...
 $ ipaddr --help
 IP Address Monitor
 
 ipaddr [OPTION]
   Monitor network interfaces for IP address changes until terminated or
-  `ip monitor address' ends.
+  $IPADDR_FEED ends. If an instance is already running on the same
+  $IPADDR_WORK directory and the /etc/ipaddr.d/20-list hook is executable,
+  all currently assigned IP addresses are listed instead, in the format
+  of the event variable $list. If addresses are missing, the monitoring
+  has probably been manually started after they had been assigned.
 
   Hooks in /etc/ipaddr.d are executable or ignored. They are entered in
   lexical order and have access to the environment and event variables
@@ -55,6 +53,33 @@ Event variables:
 Executable hooks:
   /etc/ipaddr.d/10-echo
   /etc/ipaddr.d/20-list
+```
+
+## Installation
+
+```text
+$ sudo make install
+install -m 644 -Dt /usr/lib/systemd/system/ ipaddr.service
+install -m 755 -Dt /usr/bin/ ipaddr
+install -m 755 -Dt /etc/ipaddr.d/ ipaddr.d/10-echo ipaddr.d/20-list
+systemctl daemon-reload
+systemctl enable ipaddr
+systemctl restart ipaddr
+$ sudo reboot
+```
+
+## Uninstallation
+
+```text
+$ sudo make uninstall
+systemctl disable ipaddr
+Removed /etc/systemd/system/network.target.wants/ipaddr.service.
+systemctl stop ipaddr
+rm -f /usr/lib/systemd/system/ipaddr.service
+rm -f /usr/bin/ipaddr
+rm -f /etc/ipaddr.d/10-echo /etc/ipaddr.d/20-list
+rmdir --ignore-fail-on-non-empty /etc/ipaddr.d/
+systemctl daemon-reload
 ```
 
 ## License

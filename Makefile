@@ -1,12 +1,12 @@
 UNIT_SRC := ipaddr.service
 EXEC_SRC := ipaddr
 HOOK_SRC := $(wildcard ipaddr.d/*)
-LIST_SRC := /run/ipaddr/list
 
 UNIT_DST := /usr/lib/systemd/system/
 EXEC_DST := /usr/bin/
 HOOK_DST := /etc/ipaddr.d/
-LIST_DST := /etc/ipaddr
+
+SYSTEMCTL := $(shell command -v systemctl 2> /dev/null)
 
 .PHONY: all
 all:
@@ -17,15 +17,24 @@ install:
 	install -m 644 -Dt $(UNIT_DST) $(UNIT_SRC)
 	install -m 755 -Dt $(EXEC_DST) $(EXEC_SRC)
 	install -m 755 -Dt $(HOOK_DST) $(HOOK_SRC)
-	ln -sf $(LIST_SRC) $(LIST_DST)
+ifdef SYSTEMCTL
+	systemctl daemon-reload
+	systemctl enable ipaddr
+	systemctl restart ipaddr
+endif
 
 .PHONY: uninstall
 uninstall:
+ifdef SYSTEMCTL
+	systemctl disable ipaddr
+	systemctl stop ipaddr
+endif
 	rm -f $(UNIT_DST)$(notdir $(UNIT_SRC))
 	rm -f $(EXEC_DST)$(notdir $(EXEC_SRC))
 	rm -f $(patsubst %,$(HOOK_DST)%,$(notdir $(HOOK_SRC)))
 	rmdir --ignore-fail-on-non-empty $(HOOK_DST)
-	rm -f $(LIST_SRC) $(LIST_DST)
-	rmdir --ignore-fail-on-non-empty $(dir $(LIST_SRC))
+ifdef SYSTEMCTL
+	systemctl daemon-reload
+endif
 
 Makefile:;

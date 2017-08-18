@@ -1,0 +1,137 @@
+#! /bin/sh
+
+FEED=${IPADDR_FEED:-"ip monitor address"}
+HOOK=${IPADDR_HOOK:-"/etc/ipaddr.d"}
+WORK=${IPADDR_WORK:-"/run/ipaddr"}
+
+hooks=
+[ -d "$HOOK" -a -r "$HOOK" -a -x "$HOOK" ] && for hook in "$HOOK/"*
+do
+	[ -r "$hook" -a -x "$hook" ] && hooks="$hooks\n  $hook"
+done
+
+help="\
+IP Address Monitor
+
+ipaddr [OPTION]
+  Monitor network interfaces for IP address changes until terminated or
+  \`$FEED' ends.
+
+  Hooks in $HOOK are executable or ignored. They are entered in
+  lexical order and have access to the environment and event variables
+  listed below. Hooks are advised to wrapped file operations with \`flock'.
+  Long hooks delay subsequent events but no event is ever missed.
+
+OPTIONs:
+  -h, --help     Print help.
+  -v, --version  Print version.
+
+Environment variables:
+  \$IPADDR_FEED  ${FEED:-"<FEED_CMD>"}
+  \$IPADDR_WORK  ${WORK:-"<WORK_DIR>"}
+  \$IPADDR_HOOK  ${HOOK:-"<HOOK_DIR>"}
+
+Event variables:
+  \$list           <list of all currently assigned addresses
+                     as \"\$interface \$address/\$prefix\\\\n\"
+                     in the order they have been assigned
+                     inclusive the current \$action>
+  \$action         assign|update (lifetime via RA)|resign
+  \$index          <network interface index>
+  \$interface      <network interface name>
+  \$family         inet|inet6
+  \$address        <IP address>
+  \$prefix         <number of prefix bits>
+  \$brd            <broadcast address (inet only)>
+  \$scope          <as of \`ip-address'>
+  \$flag_list      <as of \`ip-address'>
+  \$valid_lft      <valid lifetime in seconds>
+  \$preferred_lft  <preferred lifetime in seconds>
+
+Executable hooks:$hooks"
+info="\
+v1.0.0 <https://qu1x.org/ipaddr>"
+hint="\
+Invalid usage, see \`ipaddr --help'."
+
+parse_address() {
+	address=$1
+	prefix=$2
+}
+
+parse_ev() {
+	if [ "$1" = Deleted ]; then shift; action=resign; else action=assign; fi
+	index=$(echo "$1" | tr -d ":")
+	interface=$2
+	family=$3
+	parse_address $(echo "$4" | tr "/" " ")
+	if [ "$family" = inet ]; then brd=$6; shift 2; fi
+	scope=$6
+	shift 6
+	[ "$family" = inet ] && shift
+	flag_list=$*
+}
+
+parse_lft() {
+	valid_lft=$(echo "$2" | tr -d "[:alpha:]")
+	preferred_lft=$(echo "$4" | tr -d "[:alpha:]")
+}
+
+hook() {
+	list=
+	$FEED | while read -r ev; read -r lft
+	do
+		parse_ev $ev && parse_lft $lft
+		item="$interface $address/$prefix"
+		case $action in
+			assign)
+				if echo "$list" | grep -q "$item"
+				then
+					action=update
+				else
+					[ "$list" ] && list="$list\n$item" || list=$item
+				fi ;;
+			resign)
+				list=$(echo "$list" | grep -v "$item") ;;
+		esac
+		[ -d "$HOOK" -a -r "$HOOK" -a -x "$HOOK" ] && for hook in "$HOOK/"*
+		do
+			[ -r "$hook" -a -x "$hook" ] && env -i \
+				FEED="$FEED" \
+				WORK="$WORK" \
+				HOOK="$HOOK" \
+				list="$list" \
+				action="$action" \
+				index="$index" \
+				interface="$interface" \
+				family="$family" \
+				address="$address" \
+				prefix="$prefix" \
+				brd="$brd" \
+				scope="$scope" \
+				flag_list="$flag_list" \
+				valid_lft="$valid_lft" \
+				preferred_lft="$preferred_lft" \
+				"$hook"
+		done
+	done
+}
+
+[ $# -le 1 ] && what=$1 || what=*
+
+case $what in
+	"")
+		mkdir -p "$WORK" && (
+			flock -n 3 || {
+				echo 1>&2 "Already running at $WORK"
+				exit 1
+			}
+			hook
+		) 3< "$WORK" ;;
+	-h|--help)
+		echo "$help" ;;
+	-v|--version)
+		echo "$info" ;;
+	*)
+		echo "$hint" 1>&2; exit 1 ;;
+esac

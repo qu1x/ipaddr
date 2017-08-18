@@ -1,0 +1,4 @@
+#! /bin/sh
+
+[ "$action" != update ] &&
+	flock "$WORK/list" printf "$list\n" > "$WORK/list"

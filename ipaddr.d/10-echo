@@ -1,0 +1,4 @@
+#! /bin/sh
+
+[ "$action" != "update" ] &&
+	echo "$interface: $action $address/$prefix"

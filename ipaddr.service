@@ -1,0 +1,10 @@
+[Unit]
+Description=IP Address Monitor
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+ExecStart=/usr/bin/ipaddr
+
+[Install]
+WantedBy=network.target

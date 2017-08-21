@@ -26,7 +26,7 @@ ipaddr show
 ipaddr monitor
   Monitor network interfaces for IP address changes. Hooks in $IPADDR_HOOK are
   executable or ignored. They are entered in lexical order and have access to
-  the environment and event variables listed below. Hooks are advised to wrapped
+  the environment and event variables listed below. Hooks are advised to wrap
   file operations with `flock'. Long hooks delay subsequent events but no event
   is ever missed.
 

@@ -10,7 +10,6 @@
 #
 # DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.
 
-FEED=${IPADDR_FEED:-"ip monitor address"}
 HOOK=${IPADDR_HOOK:-"/etc/ipaddr.d"}
 WORK=${IPADDR_WORK:-"/run/ipaddr"}
 
@@ -24,24 +23,22 @@ help="\
 IP Address Monitor
 
 ipaddr [OPTION]
-  Monitor network interfaces for IP address changes until terminated or
-  \$IPADDR_FEED ends. If an instance is already running on the same
-  \$IPADDR_WORK directory and the \$IPADDR_HOOK/20-list hook is executable, all
-  currently assigned IP addresses are listed instead, in the format of the event
-  variable \$list. If addresses are missing, the monitoring has probably been
-  manually started after they had been assigned.
+  If a monitor is running on the same \$IPADDR_WORK directory and the
+  \$IPADDR_HOOK/20-list hook is executable, all currently assigned IP addresses
+  are listed in the format of the event variable \$list.
 
-  Hooks in \$IPADDR_HOOK are executable or ignored. They are entered in lexical
-  order and have access to the environment and event variables listed below.
-  Hooks are advised to wrapped file operations with \`flock'. Long hooks delay
-  subsequent events but no event is ever missed.
+ipaddr monitor
+  Monitor network interfaces for IP address changes. Hooks in \$IPADDR_HOOK are
+  executable or ignored. They are entered in lexical order and have access to
+  the environment and event variables listed below. Hooks are advised to wrapped
+  file operations with \`flock'. Long hooks delay subsequent events but no event
+  is ever missed.
 
 OPTIONs:
   -h, --help     Print help.
   -v, --version  Print version.
 
 Environment variables:
-  \$IPADDR_FEED  ${FEED:-"<FEED_CMD>"}
   \$IPADDR_WORK  ${WORK:-"<WORK_DIR>"}
   \$IPADDR_HOOK  ${HOOK:-"<HOOK_DIR>"}
 
@@ -58,9 +55,9 @@ Event variables:
   \$prefix         <number of prefix bits>
   \$brd            <broadcast address (inet only)>
   \$scope          <as of \`ip-address'>
-  \$flag_list      <as of \`ip-address'>
-  \$valid_lft      <valid lifetime in seconds>
-  \$preferred_lft  <preferred lifetime in seconds>
+  \$flag_list      <as of \`ip-address' but separated with \\\\n>
+  \$valid_lft      <as of \`ip-address without sec postfix>
+  \$preferred_lft  <as of \`ip-address without sec postfix>
 
 Executable hooks:$hooks"
 info="\
@@ -68,38 +65,35 @@ v1.0.0 <https://qu1x.org/ipaddr>"
 hint="\
 Invalid usage, see \`ipaddr --help'."
 
-parse_address() {
-	address=$1
-	prefix=$2
-}
-
-parse_ev() {
+extr() {
 	if [ "$1" = Deleted ]; then shift; action=resign; else action=assign; fi
-	index=$(echo "$1" | tr -d ":")
+	index=$(echo "$1" | sed 's|:$||')
 	interface=$2
 	family=$3
-	parse_address $(echo "$4" | tr "/" " ")
-	if [ "$family" = inet ]; then brd=$6; shift 2; fi
+	address=$(echo "$4" | sed 's|/.*||')
+	prefix=$(echo "$4" | sed 's|.*/||')
+	if [ "$family" = inet -a "$interface" != lo ]; then brd=$6; shift 2; fi
 	scope=$6
 	shift 6
-	[ "$family" = inet ] && shift
-	flag_list=$*
+	if [ $# -gt 5 ]; then flag_list=$1; shift; else flag_list=; fi
+	while [ $# -gt 5 ]; do shift; flag_list="$flag_list\n$1"; done
+	shift
+	valid_lft=$(echo "$2" | sed 's|sec$||')
+	preferred_lft=$(echo "$4" | sed 's|sec$||')
 }
 
-parse_lft() {
-	valid_lft=$(echo "$2" | tr -d "[:alpha:]")
-	preferred_lft=$(echo "$4" | tr -d "[:alpha:]")
+list() {
+	list="$WORK/list"; { flock -s 3; cat "$list"; } 3< "$list"
 }
 
 hook() {
-	[ -r "$WORK" -a -w "$WORK" -a -x "$WORK" ] || {
-		echo 1>&2 "Monitoring requires rwx permissions for $WORK"
-		exit 1
-	}
+	mkdir "$WORK" || exit 1
+	trap 'rm -rf "$WORK"; exit' EXIT INT TERM HUP
 	list=
-	$FEED | while read -r ev; read -r lft
+	{ ip -o address; ip -o monitor address; } | while read -r data
 	do
-		parse_ev $ev && parse_lft $lft
+		extr $data
+		[ "$interface" = lo ] && continue
 		item="$interface $address/$prefix"
 		case $action in
 			assign)
@@ -135,16 +129,13 @@ hook() {
 	done
 }
 
-list() {
-	list="$WORK/list"
-	flock -s "$list" cat "$list" 2> /dev/null || true
-}
-
 [ $# -le 1 ] && what=$1 || what=*
 
 case $what in
 	"")
-		mkdir -p "$WORK" && (flock -n 3 && hook || list) 3< "$WORK" ;;
+		list ;;
+	monitor)
+		hook ;;
 	-h|--help)
 		echo "$help" ;;
 	-v|--version)

@@ -4,7 +4,7 @@ Before=network-pre.target
 Wants=network-pre.target
 
 [Service]
-ExecStart=/usr/bin/ipaddr
+ExecStart=/usr/bin/ipaddr monitor
 
 [Install]
 WantedBy=network.target

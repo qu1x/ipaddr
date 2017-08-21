@@ -83,11 +83,23 @@ extr() {
 }
 
 list() {
-	list="$WORK/list"; { flock -s 3; cat "$list"; } 3< "$list"
+	[ -e "$WORK" ] || {
+		echo 1>&2 "No monitor running on $WORK"
+		exit 1
+	}
+	list="$WORK/list"
+	[ -e "$list" ] && flock -s "$list" cat "$list"
 }
 
 hook() {
-	mkdir "$WORK" || exit 1
+	[ -e "$WORK" ] && {
+		echo 1>&2 "Monitor already running on $WORK"
+		exit 1
+	}
+	mkdir "$WORK" 2> /dev/null || {
+		echo 1>&2 "Write permission required for $(dirname "$WORK")"
+		exit 1
+	}
 	trap 'rm -rf "$WORK"; exit' EXIT INT TERM HUP
 	list=
 	{ ip -o address; ip -o monitor address; } | while read -r data

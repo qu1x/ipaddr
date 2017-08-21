@@ -8,30 +8,31 @@ Requires `ip` only, optionally `systemd`.
 
 ```text
 $ ipaddr
-interface address/prefix
-...
+enp1s0 fe80::2/64
+enp1s0 2001:db8::1:2/64
+enp1s0 192.0.2.102/24
+wlp2s0 2001:db8::2:2/64
+wlp2s0 192.0.2.202/24
 $ ipaddr --help
 IP Address Monitor
 
 ipaddr [OPTION]
-  Monitor network interfaces for IP address changes until terminated or
-  $IPADDR_FEED ends. If an instance is already running on the same
-  $IPADDR_WORK directory and the /etc/ipaddr.d/20-list hook is executable,
-  all currently assigned IP addresses are listed instead, in the format
-  of the event variable $list. If addresses are missing, the monitoring
-  has probably been manually started after they had been assigned.
+  If a monitor is running on the same $IPADDR_WORK directory and the
+  $IPADDR_HOOK/20-list hook is executable, all currently assigned IP addresses
+  are listed in the format of the event variable $list.
 
-  Hooks in /etc/ipaddr.d are executable or ignored. They are entered in
-  lexical order and have access to the environment and event variables
-  listed below. Hooks are advised to wrapped file operations with `flock'.
-  Long hooks delay subsequent events but no event is ever missed.
+ipaddr monitor
+  Monitor network interfaces for IP address changes. Hooks in $IPADDR_HOOK are
+  executable or ignored. They are entered in lexical order and have access to
+  the environment and event variables listed below. Hooks are advised to wrapped
+  file operations with `flock'. Long hooks delay subsequent events but no event
+  is ever missed.
 
 OPTIONs:
   -h, --help     Print help.
   -v, --version  Print version.
 
 Environment variables:
-  $IPADDR_FEED  ip monitor address
   $IPADDR_WORK  /run/ipaddr
   $IPADDR_HOOK  /etc/ipaddr.d
 
@@ -48,9 +49,9 @@ Event variables:
   $prefix         <number of prefix bits>
   $brd            <broadcast address (inet only)>
   $scope          <as of `ip-address'>
-  $flag_list      <as of `ip-address'>
-  $valid_lft      <valid lifetime in seconds>
-  $preferred_lft  <preferred lifetime in seconds>
+  $flag_list      <as of `ip-address' but separated with "\n">
+  $valid_lft      <as of `ip-address' but without "sec" postfix>
+  $preferred_lft  <as of `ip-address' but without "sec" postfix>
 
 Executable hooks:
   /etc/ipaddr.d/10-echo

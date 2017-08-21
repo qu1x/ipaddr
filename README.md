@@ -68,7 +68,6 @@ install -m 755 -Dt /etc/ipaddr.d/ ipaddr.d/10-echo ipaddr.d/20-list
 systemctl daemon-reload
 systemctl enable ipaddr
 systemctl restart ipaddr
-$ sudo reboot
 ```
 
 ## Uninstallation

@@ -11,15 +11,17 @@ $ ipaddr
 enp1s0 fe80::2/64
 enp1s0 2001:db8::1:2/64
 enp1s0 192.0.2.102/24
+wlp2s0 fe80::2/64
 wlp2s0 2001:db8::2:2/64
 wlp2s0 192.0.2.202/24
 $ ipaddr --help
 IP Address Monitor
 
-ipaddr [OPTION]
+ipaddr
+ipaddr show
   If a monitor is running on the same $IPADDR_WORK directory and the
   $IPADDR_HOOK/20-list hook is executable, all currently assigned IP addresses
-  are listed in the format of the event variable $list.
+  are shown in the format of the event variable $list.
 
 ipaddr monitor
   Monitor network interfaces for IP address changes. Hooks in $IPADDR_HOOK are
@@ -27,6 +29,9 @@ ipaddr monitor
   the environment and event variables listed below. Hooks are advised to wrapped
   file operations with `flock'. Long hooks delay subsequent events but no event
   is ever missed.
+
+ipaddr OPTION
+  Print and exit.
 
 OPTIONs:
   -h, --help     Print help.

@@ -119,14 +119,14 @@ monitor() {
 		item="$interface\t$address/$prefix"
 		case $action in
 			assign)
-				if echo "$list" | grep -q "$item"
+				if echo "$list" | grep -qF "$item"
 				then
 					action=update
 				else
 					[ "$list" ] && list="$list\n$item" || list=$item
 				fi ;;
 			resign)
-				list=$(echo "$list" | grep -v "$item") ;;
+				list=$(echo "$list" | grep -vF "$item") ;;
 		esac
 		[ -d "$HOOK" -a -r "$HOOK" -a -x "$HOOK" ] && for hook in "$HOOK/"*
 		do

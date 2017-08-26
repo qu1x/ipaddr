@@ -8,12 +8,12 @@ Requires `ip` only, optionally `systemd`.
 
 ```text
 $ ipaddr
-enp1s0 fe80::2/64
-enp1s0 2001:db8::1:2/64
-enp1s0 192.0.2.102/24
-wlp2s0 fe80::2/64
-wlp2s0 2001:db8::2:2/64
-wlp2s0 192.0.2.202/24
+enp1s0	fe80::2/64
+enp1s0	2001:db8::1:2/64
+enp1s0	192.0.2.102/24
+wlp2s0	fe80::2/64
+wlp2s0	2001:db8::2:2/64
+wlp2s0	192.0.2.202/24
 $ ipaddr --help
 IP Address Monitor
 
@@ -43,7 +43,7 @@ Environment variables:
 
 Event variables:
   $list           <list of all currently assigned addresses
-                    as "$interface $address/$prefix\n"
+                    as "$interface\t$address/$prefix\n"
                     in the order they have been assigned
                     inclusive the current $action>
   $action         assign|update (lifetime via RA)|resign

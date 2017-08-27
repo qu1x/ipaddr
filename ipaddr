@@ -81,7 +81,9 @@ extr() {
 	shift 6
 	if [ $# -gt 5 ]; then flag_list=$1; shift; else flag_list=; fi
 	while [ $# -gt 5 ]; do shift; flag_list="$flag_list\n$1"; done
-	[ "$interface" = if"$index" ] && interface=$(echo "$1" | sed 's|\\$||')
+	if [ "$interface" = if"$index" -a "$1" != \\ ]; then
+	   interface=$(echo "$1" | sed 's|\\$||')
+	fi
 	shift
 	valid_lft=$(echo "$2" | sed 's|sec$||')
 	preferred_lft=$(echo "$4" | sed 's|sec$||')
